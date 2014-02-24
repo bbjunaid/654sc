@@ -1,0 +1,26 @@
+1. To compile, type make in the folder where the Makefile, Client.java, and Server.java reside.
+
+2. To run, open two terminals, one for client and one for server, and cd to the folder both are compiled in:
+
+Terminal 1:
+>> java Server
+
+The server takes no parameter. When it runs, it will output an n_port which needs to be used when running
+the client.
+
+Terminal 2:
+>> java Client <server hostname> <n_port outputted by server> <Message to reverse>
+
+The client takes 3 parameters. The server hostname, which can be found by going to the machine which the server
+resides on and typing 'hostname'. 
+
+The n_port, which is output by the server program when it runs. 
+
+Lastly, the message which needs to be reversed. It is recommended to input this message in single quotation marks,
+ie. 'Hello' or 'Message to Reverse!'
+
+Testing:
+The version of make is GNU Make 3.81, and the version of javac is 1.6.0_20.
+
+The client and server were tested on linux024.student.cs, and ubuntu1204-002 (linux.student.cs). Furthermore, they
+were also tested on my own Windows OS, as well as Ubunutu 12.04.
