@@ -19,11 +19,16 @@ public class Client {
             System.err.println("Message must be larger than 0 bytes.");
             client.usage();
         }
+        int nPort = 0;
+        try {
+            nPort = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            System.err.println("n_port must be a valid integer");
+            client.usage();
+        }
 
         String hostname = args[0];
-        System.out.println("Msg input: " + args[2]);
         String msg = args[2];
-        int nPort = Integer.parseInt(args[1]);
         Socket tClientSocket = null;
 
         try {
@@ -49,7 +54,6 @@ public class Client {
         outToServer.write(13); // initiate negotiation with server
 
         int rPort = Integer.parseInt(inFromServer.readLine());
-        System.out.println("Random port from server: " + rPort);
 
         tClientSocket.close();
 
@@ -58,10 +62,8 @@ public class Client {
         InetAddress IPAddress = InetAddress.getByName(hostname);
 
         byte[] sendData = msg.getBytes();
-        System.out.println("Msg: " + new String(sendData));
-        System.out.println("Send Data length: " + sendData.length);
-    
         byte[] receiveData = new byte[sendData.length];
+
         DatagramPacket sendPacket =
             new DatagramPacket(sendData, sendData.length, IPAddress, rPort);
         uClientSocket.send(sendPacket);
@@ -69,8 +71,11 @@ public class Client {
         DatagramPacket receivePacket = 
             new DatagramPacket(receiveData, receiveData.length);
         uClientSocket.receive(receivePacket);
+
         String modifiedMsg = new String(receivePacket.getData());
+
         System.out.println("From Server: " + modifiedMsg);
+
         uClientSocket.close();
     }
 }

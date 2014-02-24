@@ -31,13 +31,12 @@ public class Server {
            
             // initiate negotiation 
             if ( inFromClient.read() == 13 ) {
-                // find open port
-                ServerSocket tempSocket = new ServerSocket(0); 
-                int rPort = tempSocket.getLocalPort();
-                outToClient.writeBytes(Integer.toString(rPort) + "\n");
-                tempSocket.close();
+                // let OS find open port
+                DatagramSocket uServerSocket = new DatagramSocket();
 
-                DatagramSocket uServerSocket = new DatagramSocket(rPort);
+                // send random port to client
+                outToClient.writeBytes(Integer.toString(uServerSocket.getLocalPort()) + "\n");
+
                 DatagramPacket receivePacket =
                     new DatagramPacket(receiveData, receiveData.length);
                 uServerSocket.receive(receivePacket);
@@ -47,7 +46,6 @@ public class Server {
                 int port = receivePacket.getPort();
                 String reversedStr = new StringBuffer(msg).reverse().toString();
                 sendData = reversedStr.getBytes();
-                System.out.println("Send Data length: " + sendData.length);
                 DatagramPacket sendPacket =
                     new DatagramPacket(sendData, sendData.length, IPAddress, port);
                 uServerSocket.send(sendPacket);
