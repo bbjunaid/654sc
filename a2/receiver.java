@@ -3,37 +3,45 @@ import java.net.*;
 import java.util.Arrays;
 
 public class receiver {
-    private int expectedSeqNum;
-    private DatagramSocket uReceiverSocket;
-    private InetAddress IPAddress;
-    private int portEmulatorFromReceiver;
-    private int portReceiverFromEmulator;
+    private int expectedSeqNum;                 // packet expected from sender
+    private DatagramSocket uReceiverSocket;     // socket to receive packets and send ACKs/EOT
+    
+    // User input variables
+    private InetAddress IPAddress;              // ip-address of nEmmulator
+    private int portEmulatorFromReceiver;       // port Emulator expects to receive data from receiver
+    private int portReceiverFromEmulator;       // port receiver expects to receive data from nEmulator
 
+    // Constructor for receiver 
     public receiver() {
         expectedSeqNum = 0;
         IPAddress = null;
     }
 
+    // Usage message
     private void usage() {
         String usage = "Usage: receiver <nEmulator host> <port: nEmulator from Receiver> "
                      + "<port: Receiver from nEmulator> <output file name>";
         System.err.println(usage);
         System.exit(1); 
     }
-    
+   
+    // Sends a GBN packet to emulator  
+    // Input: gbn packet
+    // Output void
     private void sendToEmulator(packet p) {
-        byte[] sendData = p.getUDPdata();
+        byte[] sendData = p.getUDPdata();   // get the UDP data of the packet
         DatagramPacket sendDatagram =
             new DatagramPacket(sendData, sendData.length, IPAddress, portEmulatorFromReceiver);
 
         try {
-            uReceiverSocket.send(sendDatagram);
+            uReceiverSocket.send(sendDatagram);     // send the datagram
         } catch (Exception e) {
             System.out.println("Could not send packet to emulator");
             System.exit(1);
         }
     }
 
+    // Main logic for the receiver program
     private void begin(String[] args) throws Exception {
         // check for valid arguments
         if ( args.length != 4 ) {
@@ -65,24 +73,28 @@ public class receiver {
             System.out.println("Could not connect to nEmulator host. Ensure valid hostname is entered.");
             usage();
         }
-        
-        File output = new File(filename);
-        PrintWriter printer = null;
+       
+        // Check if output file writing is allowed 
+        FileWriter output = null;
         try {
-            printer = new PrintWriter(output);
-        } catch (Exception e) {
-            System.out.println("Cannot write to output file. Verify filename/permissions.");
-            System.exit(1);
+            output = new FileWriter(filename);
+        } catch(IOException e) {
+            System.out.println("Could not write to given output file.");
+            usage();
         }
 
-        String strToWrite;
-        uReceiverSocket = new DatagramSocket(portReceiverFromEmulator);
-        byte[] receiveData = new byte[512]; 
+        String strToWrite;  // variable to store the string needed to write to file
+        uReceiverSocket = new DatagramSocket(portReceiverFromEmulator); // reciever socket from send/receive
+        byte[] receiveData = new byte[512];     // max size of receive data is 512 bytes
         DatagramPacket receiveDatagram = new DatagramPacket(receiveData, receiveData.length);
-        packet receivePacket = null;
-        packet sendPacket = null;
-        PrintWriter arrivalWriter = new PrintWriter(new File("arrival.log"));
+        packet receivePacket = null;    // packet to receive from emulator
+        packet sendPacket = null;       // packet to send to emulator
+        PrintWriter arrivalWriter = new PrintWriter(new File("arrival.log"));   // to write to arrival.log
+    
+        // Start receiving the data
+        System.out.println("Starting to receive data");
         while(true) {
+            // Recieve the datagram and parse the UDP data into a GBN packet
             try {
                 uReceiverSocket.receive(receiveDatagram);    
                 byte[] UDPdata = Arrays.copyOf(receiveDatagram.getData(), receiveDatagram.getLength());
@@ -96,47 +108,41 @@ public class receiver {
                 System.exit(1);
             }
             
-            // write sequence number to log
-            System.out.printf("Received Packet with Seq Num: %d. Expected Seq Num: %d\n", receivePacket.getSeqNum(),
-                               expectedSeqNum % 32);
-
-            // if EOT packet
+            // if EOT packet, we send the EOT packet back to sender, then exit the receiver
             if (receivePacket.getType() == 2) {
                 sendPacket =  packet.createEOT(expectedSeqNum % 32);
                 sendToEmulator(sendPacket);
-                System.out.printf("Sending EOT packet. Seq Num: %d\n", expectedSeqNum%32);
                 break;
             } else {
-                arrivalWriter.println(receivePacket.getSeqNum());
+                arrivalWriter.println(receivePacket.getSeqNum());   // write the arrival sequence number
+                // If we get an expected packet, then create an ACK packet to send back and send it
+                // Also write the data from this packet to the output file
                 if(receivePacket.getSeqNum() == expectedSeqNum % 32) {
                     sendPacket = packet.createACK(expectedSeqNum % 32);
                     sendToEmulator(sendPacket);
                     strToWrite = new String(receivePacket.getData()); 
-                    printer.write(strToWrite);
+                    output.write(strToWrite, 0, receivePacket.getLength());
                     expectedSeqNum++;
                 } 
+                // If we get an unexpected packet, send the previous correctly received packet's ACK back to
+                // sender. In the case of the first packet missing, we don't send back any acks
                 else if (expectedSeqNum != 0) {
-                    sendPacket = packet.createACK( (expectedSeqNum-1) %32 );
-                    sendToEmulator(sendPacket);
+                    sendPacket = packet.createACK( (expectedSeqNum-1) %32 );    // create ACK for previous correct packet
+                    sendToEmulator(sendPacket);     // send the ACK
                 }
             }
         }
-        //uReceiverSocket.receive(receiveDatagram);    
-        //System.out.println("Received a datagram");
-        //byte[] UDPdata = Arrays.copyOf(receiveDatagram.getData(), receiveDatagram.getLength());
-        //System.out.printf("Size of udp data: %d\n", UDPdata.length);
-        //receivePacket = packet.parseUDPdata(UDPdata);
-        //strToWrite = new String(receivePacket.getData()); 
-        //printer.write(strToWrite);
-        //sendPacket = packet.createACK(expectedSeqNum % 32);
-        //sendToEmulator(sendPacket);
+        System.out.println("Finished receiving data");
 
-        printer.write("\n");
-        printer.close();
-        arrivalWriter.close();
-        uReceiverSocket.close();
+        output.write("\r"); // need to write appropraite line seperator
+                                                            // sometimes this is \r, sometimes \n
+                                                            // seems to be hard to get the correct seperator to be written
+        output.close();     // close the output file writer
+        arrivalWriter.close();  // close the arrival.log writer
+        uReceiverSocket.close();    // close reciever socket
     }
 
+    // Main function for receiver program
     public static void main(String[] args) throws Exception {
         receiver r = new receiver();
         r.begin(args);
