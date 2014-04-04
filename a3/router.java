@@ -183,6 +183,8 @@ public class router {
         routerLog.println(router_circuit_DB.name + " receives a INIT circuit_DB");
         router_network_DB[routerID-1] = router_circuit_DB;
         printTopologyDatabase(); 
+
+        routerLog.close();
     }
 
     private void printTopologyDatabase() {
