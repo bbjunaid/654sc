@@ -1,0 +1,48 @@
+1. To compile, type make in the folder where the Makefile and router.java reside. 
+This creates a script called router which can be run as:
+
+>> ./router <router_id> <nse_host> <nse_port> <router_port>
+
+2. To run, open two terminals, one for running the routers and one for running the nse
+
+Terminal 1:
+Run the nse with the required parameters. This includes the hostname of the router and the port
+the nse is going to listen on, for example:
+
+>> ./nse-linux386 ubuntu1204-004 9000
+
+Terminal 2:
+The router takes in 4 parameters: router id, the hostname where nse runs, the port nse
+is listening on, and the porn the router is going to listen on.
+
+We need to run all 5 routers, preferrably in the background. For this reason, the script
+test.sh is attached. If 0 is passed as a parameter, the script runs all five routers
+
+>> ./test.sh 0
+
+    ./router 1 ubuntu1204-006 9000 6001 &
+    sleep 0.1
+    ./router 2 ubuntu1204-006 9000 6002 &
+    sleep 0.1
+    ./router 3 ubuntu1204-006 9000 6003 &
+    sleep 0.1
+    ./router 4 ubuntu1204-006 9000 6004 &
+    sleep 0.1
+    ./router 5 ubuntu1204-006 9000 6005 &
+    sleep 0.1
+
+If 1 is passed as a parameter, the script does some cleanup by killing all the routers, since sometimes
+the ports stay occupied:
+
+>> ./test.sh 1
+
+    killall router
+    killall java
+
+Testing:
+The version of make is GNU Make 3.81, and the version of javac is 1.6.0_27.
+
+For testing, the following cs undergrad machines are where the router and nse ran on:
+
+router: ubuntu1204-004
+nse: ubuntu1204-006
