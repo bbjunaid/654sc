@@ -31,13 +31,15 @@ test.sh is attached. If 0 is passed as a parameter, the script runs all five rou
     ./router 5 ubuntu1204-006 9000 6005 &
     sleep 0.1
 
-If 1 is passed as a parameter, the script does some cleanup by killing all the routers, since sometimes
-the ports stay occupied:
+If 1 is passed as a parameter, the script does some cleanup by killing all the routers, since the routers
+don't finish and thus you need to kill them to access the ports again
 
 >> ./test.sh 1
 
     killall router
     killall java
+
+Between consecutive runs, the nse needs to be stopped and restarted.
 
 Testing:
 The version of make is GNU Make 3.81, and the version of javac is 1.6.0_27.
